@@ -1,5 +1,12 @@
 DROP DATABASE IF EXISTS ncstaffsql;
 CREATE DATABASE ncstaffsql;
+DROP TABLE IF EXISTS staff_performance CASCADE;
+DROP TABLE IF EXISTS dim_staff CASCADE;
+DROP TABLE IF EXISTS dim_location CASCADE;
+DROP TABLE IF EXISTS dim_manager CASCADE;
+DROP TABLE IF EXISTS dim_date CASCADE;
+DROP TABLE IF EXISTS staff CASCADE;
+
 
 \c ncstaffsql
 
@@ -44,3 +51,138 @@ VALUES
 ('Chon', 'Lee', 'Manchester', 'Data', 'Joe Mulvey', 15, '12 May 2024', 4, 50.67, 658.71);
 
 SELECT * FROM staff;
+
+CREATE TABLE dim_staff 
+(
+    staff_id SERIAL PRIMARY KEY,
+    staff_first_name VARCHAR(100),
+    staff_last_name VARCHAR(100)
+    
+);
+
+CREATE TABLE dim_location
+(
+    location_id SERIAL PRIMARY KEY,
+    location_name VARCHAR(100)
+    
+);
+
+
+
+
+CREATE TABLE dim_manager (
+    manager_id SERIAL PRIMARY KEY,
+    manager_name VARCHAR(100)
+
+);
+
+
+CREATE TABLE dim_date 
+(
+    date_id SERIAL PRIMARY KEY,
+    full_date DATE,
+    day INT,
+    day_name VARCHAR(100),
+    week INT,
+    month INT,
+    month_name VARCHAR(100),
+    quarter INT,
+    year INT
+);
+
+
+CREATE TABLE staff_performance
+(   
+    fact_id SERIAL PRIMARY KEY,
+    staff_id INT REFERENCES dim_staff(staff_id) ,
+    date_id INT REFERENCES dim_date(date_id),
+    location_id INT REFERENCES dim_location(location_id),
+    manager_id INT REFERENCES dim_manager(manager_id),
+    mentees INT,
+    mentees_staff_rating INT,
+    daily_rate NUMERIC(10,2),
+    revenue NUMERIC(10,2)
+
+
+);
+
+
+
+INSERT INTO dim_staff (
+    staff_first_name, staff_last_name) 
+    SELECT DISTINCT
+    first_name,
+    last_name
+FROM staff;
+
+INSERT INTO dim_location (
+   location_name) 
+    SELECT DISTINCT
+    area
+FROM staff;
+
+
+INSERT INTO dim_manager (manager_name)
+SELECT DISTINCT
+manager
+FROM staff;
+
+INSERT INTO dim_date (full_date, day, day_name, week, month, month_name, quarter, year)
+
+WITH converted_dates AS (
+    SELECT DISTINCT TO_DATE(next_cohort_date, 'DD Month YYYY') AS full_date
+    FROM staff
+)
+SELECT 
+full_date,
+EXTRACT(DAY FROM full_date) AS day,
+TO_CHAR(full_date, 'FMDay') AS day_name,
+EXTRACT(WEEK FROM full_date) AS week,
+EXTRACT(MONTH FROM full_date) AS month,
+TO_CHAR(full_date, 'FMMonth') AS month_name,
+EXTRACT(QUARTER FROM full_date) AS quarter,
+EXTRACT(YEAR FROM full_date) AS year
+
+FROM converted_dates;
+
+
+
+INSERT INTO staff_performance (
+    staff_id,
+    date_id,
+    location_id,
+    manager_id,
+    mentees,
+    mentees_staff_rating,
+    daily_rate,
+    revenue
+)
+
+SELECT  
+        ds.staff_id,
+        dd.date_id,
+        dl.location_id,
+        dm.manager_id,
+        s.mentees,
+        s.mentees_staff_rating,
+        s.daily_rate,
+        s.revenue
+FROM staff s
+
+JOIN dim_staff ds
+        ON s.first_name = ds.staff_first_name AND s.last_name = ds.staff_last_name
+
+JOIN dim_location dl ON s.area = dl.location_name
+JOIN dim_manager dm ON s.manager = dm.manager_name
+
+JOIN dim_date dd ON TO_DATE(s.next_cohort_date, 'DD Month YYYY' ) = dd.full_date;
+
+
+
+
+
+
+
+
+
+

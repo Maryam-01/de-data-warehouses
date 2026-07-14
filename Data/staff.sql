@@ -114,18 +114,21 @@ INSERT INTO dim_staff (
     first_name,
     last_name
 FROM staff;
+SELECT * FROM dim_staff;
+
 
 INSERT INTO dim_location (
    location_name) 
     SELECT DISTINCT
     area
 FROM staff;
-
+SELECT * FROM dim_location;
 
 INSERT INTO dim_manager (manager_name)
 SELECT DISTINCT
 manager
 FROM staff;
+SELECT * FROM dim_manager;
 
 INSERT INTO dim_date (full_date, day, day_name, week, month, month_name, quarter, year)
 
@@ -176,6 +179,19 @@ JOIN dim_location dl ON s.area = dl.location_name
 JOIN dim_manager dm ON s.manager = dm.manager_name
 
 JOIN dim_date dd ON TO_DATE(s.next_cohort_date, 'DD Month YYYY' ) = dd.full_date;
+
+
+SELECT 
+staff_performance.mentees_staff_rating,
+dim_manager.manager_name
+
+FROM staff_performance
+JOIN dim_manager ON dim_manager.manager_id = staff_performance.manager_id
+WHERE staff_performance.mentees_staff_rating = (SELECT MIN(mentees_staff_rating) FROM staff_performance);
+
+
+SELECT * FROM staff_performance;
+
 
 
 

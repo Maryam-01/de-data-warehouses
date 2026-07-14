@@ -56,7 +56,8 @@ CREATE TABLE dim_staff
 (
     staff_id SERIAL PRIMARY KEY,
     staff_first_name VARCHAR(100),
-    staff_last_name VARCHAR(100)
+    staff_last_name VARCHAR(100),
+    course VARCHAR(100)
     
 );
 
@@ -109,10 +110,11 @@ CREATE TABLE staff_performance
 
 
 INSERT INTO dim_staff (
-    staff_first_name, staff_last_name) 
+    staff_first_name, staff_last_name, course) 
     SELECT DISTINCT
     first_name,
-    last_name
+    last_name,
+    course
 FROM staff;
 SELECT * FROM dim_staff;
 
@@ -189,8 +191,27 @@ FROM staff_performance
 JOIN dim_manager ON dim_manager.manager_id = staff_performance.manager_id
 WHERE staff_performance.mentees_staff_rating = (SELECT MIN(mentees_staff_rating) FROM staff_performance);
 
+WITH total_revenue AS (
+    SELECT staff_id,
+    SUM(revenue) AS sum_of_revenue,
+    AVG(daily_rate) AS avg_daily_rate
+    FROM staff_performance
+    GROUP BY staff_id
+    
+)
+SELECT total_revenue.sum_of_revenue,
+        total_revenue.avg_daily_rate,
+        dim_staff.course,
+        dim_staff.staff_first_name,
+        dim_staff.staff_last_name,
+        total_revenue.sum_of_revenue / total_revenue.avg_daily_rate AS estimated_cohorts
 
-SELECT * FROM staff_performance;
+FROM total_revenue
+JOIN dim_staff ON total_revenue.staff_id = dim_staff.staff_id
+ORDER BY estimated_cohorts DESC;
+
+
+
 
 
 
